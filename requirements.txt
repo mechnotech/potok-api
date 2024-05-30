@@ -1,0 +1,5 @@
+pydantic==2.6.4
+pydantic-settings==2.1.0
+pydantic_core==2.16.3
+aiohttp==3.8.4
+backoff==2.2.1
