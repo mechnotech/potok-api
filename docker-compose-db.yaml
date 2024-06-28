@@ -22,6 +22,22 @@ services:
     networks:
       - db-net
 
+  pgadmin:
+    image: dpage/pgadmin4:8.1
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${MAIL_LOGIN}
+      PGADMIN_DEFAULT_PASSWORD: ${API_LOGIN}
+      PGADMIN_LISTEN_PORT: 8088
+    ports:
+      - 15432:8088
+    volumes:
+      - v_pgadmin:/var/lib/pgadmin
+    depends_on:
+      - db_potok
+    env_file:
+      - .env
+
 
 volumes:
   db_potok_data:
