@@ -20,6 +20,40 @@ class Settings(BaseSettings):
     mail_login: str
     mail_pass: str
 
+    user_company_id: str
+
+    db_postgres_host: str
+    db_postgres_port: int = 5432
+    db_postgres_user: str
+    db_postgres_pass: str
+    db_postgres_name: str
+    db_postgres_schema: str
+
+    @property
+    def psg_connection_string(self) -> str:
+        return (
+            'postgresql://{}:{}@{}:{}/{}'.format(
+                self.db_postgres_user,
+                self.db_postgres_pass,
+                self.db_postgres_host,
+                self.db_postgres_port,
+                self.db_postgres_name,
+
+            )
+        )
+
+    def apsg_connection_string(self) -> str:
+        return (
+            'postgresql+asyncpg://{}:{}@{}:{}/{}'.format(
+                self.db_postgres_user,
+                self.db_postgres_pass,
+                self.db_postgres_host,
+                self.db_postgres_port,
+                self.db_postgres_name,
+
+            )
+        )
+
     class Config:
         env_file = f'{base_dir}/.env'
 

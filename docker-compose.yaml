@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  stage-etl:
+    build: .
+#    restart: unless-stopped
+    container_name: stage-etl
+    environment:
+      DB_POSTGRES_HOST: db_potok
+    env_file:
+      - .env
+    networks:
+      - db-net
+    entrypoint: ['python', 'src/stage.py']
+
+
+networks:
+  db-net:
+    name: db-net
+    external: true

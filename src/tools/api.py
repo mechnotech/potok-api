@@ -1,9 +1,20 @@
+import json
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import aiohttp
+from pydantic import BaseModel
 
 from src.tools.mail_get import EmailAgent
+
+base_dir = Path(__file__).parent.absolute()
+
+
+class AuthTokens(BaseModel):
+    token: str
+    refresh_token: str
+    ttl: datetime
 
 
 class PotokApi:
@@ -12,6 +23,7 @@ class PotokApi:
         self.config = config
         self.logger = logger
         self.magent = EmailAgent(config, logger)
+        self.user_company_id = self.config.user_company_id
         self.otp = None
         self.opt_wait_limit_seconds = 60
         self.token = None
@@ -21,7 +33,66 @@ class PotokApi:
             'login': self.config.api_login,
             'password': self.config.api_pass,
         }
-        self.try_get_opt()
+
+    def get_headers(self):
+        return {'Authorization': f'Bearer {self.token}'}
+
+    def is_token_outdated(self):
+        return datetime.utcnow() >= self.token_ttl
+
+    def load_token(self):
+        try:
+            with open(f'{base_dir}/auth/api_tokens.json', 'r') as f:
+                tokens = json.load(f)
+                self.token = tokens['token']
+                self.refresh_token = tokens['refresh_token']
+                self.token_ttl = datetime.fromtimestamp(tokens['ttl'])
+        except FileNotFoundError:
+            self.logger.warning('Cached tokens not found ...')
+
+    def save_token(self):
+        with open(f'{base_dir}/auth/api_tokens.json', 'w') as f:
+            tokens = {'token': self.token, 'refresh_token': self.refresh_token, 'ttl': self.token_ttl.timestamp()}
+            json.dump(tokens, f)
+        self.logger.debug('Cached tokens set!')
+
+    async def check_balance(self, user_company_id: str = None):
+        """
+        Вернуть баланс пользователя
+        :param user_company_id:
+        :return:
+        """
+        if self.is_token_outdated():
+            await self.try_get_token()
+
+        if not user_company_id:
+            user_company_id = self.user_company_id
+
+        url = f'https://i.potok.digital/api/companies/{user_company_id}/active-balance'
+
+        async with aiohttp.ClientSession(headers=self.get_headers()) as session:
+            result = await self.get_request(url=url, session=session)
+        if result:
+            return result
+
+    async def get_croud_companies(self, user_company_id: str = None):
+        """
+        Вернуть список предложений для заема
+        :param user_company_id:
+        :return:
+        """
+        if self.is_token_outdated():
+            await self.try_get_token()
+
+        if not user_company_id:
+            user_company_id = self.user_company_id
+
+        url = f'https://i.potok.digital/api/projects/rising-funds?companyId={user_company_id}'
+
+        async with aiohttp.ClientSession(headers=self.get_headers()) as session:
+            result = await self.get_request(url=url, session=session)
+        if result:
+            return result
 
     def try_get_opt(self, limit: int = 4):
         if self.otp:
@@ -46,10 +117,20 @@ class PotokApi:
                 raise Exception(response.status)
         return result
 
+    async def get_request(self, url, session):
+        async with session.get(url=url) as response:
+            if response.status == 200:
+                result = await response.json()
+            else:
+                text = await response.text()
+                self.logger.error(f'Failed to get {url}: {response.status}, {text}')
+                raise Exception(response.status)
+        return result
+
     def set_token(self, token_container):
         self.token = token_container.get('token')
         self.refresh_token = token_container.get('refreshToken')
-        self.token_ttl = datetime.now() + timedelta(hours=24)
+        self.token_ttl = datetime.utcnow() + timedelta(hours=24 * 7)
 
     async def get_token_with_otp(self):
         async with aiohttp.ClientSession() as session:
@@ -69,7 +150,9 @@ class PotokApi:
                 return self.token
             self.logger.warning('Token not found, try to get OTP!')
 
-    async def run(self):
+    async def try_get_token(self):
+        self.try_get_opt()
+
         if not self.otp:
             await self.request_otp()
 
@@ -78,4 +161,15 @@ class PotokApi:
             exit('Cannot get OTP!')
         await self.get_token_with_otp()
         self.otp = None
-        self.logger.info(f'Token received: {self.token}, refresh token: {self.refresh_token}')
+        self.logger.debug(f'Token received: {self.token}, refresh token: {self.refresh_token}')
+        self.save_token()
+
+    async def run(self):
+        self.load_token()
+
+        balance = await self.check_balance(self.config.user_company_id)
+        if balance:
+            self.logger.info(f'API connected for user company {self.config.user_company_id}')
+            return
+
+        await self.try_get_token()

@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  db_potok:
+    image: postgres:16.3
+    command: ["postgres", "-c", "config_file=/etc/postgresql.conf"]
+    restart: unless-stopped
+    container_name: db_potok
+    environment:
+      PGDATA: /var/lib/postgresql/data/db
+      POSTGRES_USER: ${DB_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DB_POSTGRES_PASS}
+      POSTGRES_DB: ${DB_POSTGRES_NAME}
+    volumes:
+      - db_potok_data:/var/lib/postgresql/data/db
+      - ./src/sqls/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./configs/postgresql.conf:/etc/postgresql.conf
+    ports:
+      - "55432:5432"
+    env_file:
+      - .env
+    networks:
+      - db-net
+
+
+volumes:
+  db_potok_data:
+    name: db_potok_data
+
+networks:
+  db-net:
+    name: db-net
