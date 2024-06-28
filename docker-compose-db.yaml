@@ -42,6 +42,8 @@ services:
 volumes:
   db_potok_data:
     name: db_potok_data
+  v_pgadmin:
+    name: v_pgadmin
 
 networks:
   db-net:
