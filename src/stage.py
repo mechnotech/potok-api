@@ -38,16 +38,27 @@ async def start_pipline():
     await db.int_db()
     await api.run()
 
-    while True:
-        loans_candidates = await api.get_croud_companies()
-        to_stage = []
-        for candidate in loans_candidates:
-            loans_ids.add(candidate['id'])
-            borrowers_ids.add(candidate['borrower']['id'])
-            to_stage.append((json.dumps(candidate, ensure_ascii=False),))
-        await db.stage_croud_to_db(to_stage)
-        log.info(f'Staged {len(loans_ids)} loans to db, unique borrowers: {len(borrowers_ids)}, loans {len(loans_ids)}')
-        await asyncio.sleep(60*10)
+    try:
+        while True:
+            loans_candidates = await api.get_croud_companies()
+            to_stage = []
+            if not loans_candidates:
+                balance = await api.check_balance()
+                if not balance:
+                    await asyncio.sleep(160)
+                    log.warning('Try reconnect and receive new tokens. Wait a minute ...')
+                    await api.try_get_token()
+                    continue
+
+            for candidate in loans_candidates:
+                loans_ids.add(candidate['id'])
+                borrowers_ids.add(candidate['borrower']['id'])
+                to_stage.append((json.dumps(candidate, ensure_ascii=False),))
+            await db.stage_croud_to_db(to_stage)
+            log.info(f'Staged {len(loans_ids)} loans to db, unique borrowers: {len(borrowers_ids)}, loans {len(loans_ids)}')
+            await asyncio.sleep(60*10)
+    finally:
+        await db.db_close_connection()
 
 
 if __name__ == '__main__':

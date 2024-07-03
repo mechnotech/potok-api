@@ -124,7 +124,7 @@ class PotokApi:
             else:
                 text = await response.text()
                 self.logger.error(f'Failed to get {url}: {response.status}, {text}')
-                raise Exception(response.status)
+                return
         return result
 
     def set_token(self, token_container):
