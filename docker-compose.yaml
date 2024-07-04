@@ -7,11 +7,18 @@ services:
       restart_policy:
         condition: on-failure
         delay: 30s
-        max_attempts: 10
+        max_attempts: 2
         window: 120s
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 50M
+        reservations:
+          cpus: '0.15'
+          memory: 20M
     container_name: stage-etl
     environment:
-      DB_POSTGRES_HOST: db_potok
+      DB_POSTGRES_HOST: ${DB_POSTGRES_HOST}
     env_file:
       - .env
     networks:

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     api_pass: str
     api_otp: str | None = None
     api_token: str | None = None
+    api_token_ttl: int = 24
 
     mail_imap: str
     mail_login: str

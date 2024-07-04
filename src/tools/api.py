@@ -130,7 +130,7 @@ class PotokApi:
     def set_token(self, token_container):
         self.token = token_container.get('token')
         self.refresh_token = token_container.get('refreshToken')
-        self.token_ttl = datetime.utcnow() + timedelta(hours=24 * 7)
+        self.token_ttl = datetime.utcnow() + timedelta(hours=24)
 
     async def get_token_with_otp(self):
         async with aiohttp.ClientSession() as session:
