@@ -3,7 +3,12 @@ version: '3.9'
 services:
   stage-etl:
     build: .
-#    restart: unless-stopped
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 10
+        window: 120s
     container_name: stage-etl
     environment:
       DB_POSTGRES_HOST: db_potok
