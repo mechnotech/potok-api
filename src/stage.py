@@ -6,6 +6,7 @@ import re
 from src.settings import config
 from src.tools.repositories.db_postgres import DBPostgresRepository
 from src.tools.api import PotokApi
+from src.tools.telegram_alerting import TelegramAlerting
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger('Modem')
@@ -31,14 +32,16 @@ def croud_parser(croud):
 
 
 async def start_pipline():
+    tg_alerting = TelegramAlerting(config=config, logger=log)
     loans_ids = set()
     borrowers_ids = set()
     api = PotokApi(config=config, logger=log)
     db = DBPostgresRepository(config=config)
-    await db.int_db()
-    await api.run()
 
+    await tg_alerting.send('Starts Potok API pipline')
     try:
+        await db.int_db()
+        await api.run()
         while True:
             loans_candidates = await api.get_croud_companies()
             to_stage = []
@@ -57,6 +60,9 @@ async def start_pipline():
             await db.stage_croud_to_db(to_stage)
             log.info(f'Staged {len(loans_ids)} loans to db, unique borrowers: {len(borrowers_ids)}, loans {len(loans_ids)}')
             await asyncio.sleep(60*10)
+    except Exception as e:
+        await tg_alerting.error(e)
+        raise e
     finally:
         await db.db_close_connection()
 

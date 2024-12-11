@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     api_token: str | None = None
     api_token_ttl: int = 24
 
+    app_message_creds: str
+    app_chat_id: int
+    app_chat_random_max_delay: int = 1
+
+
     mail_imap: str
     mail_login: str
     mail_pass: str
