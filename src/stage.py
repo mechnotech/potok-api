@@ -38,7 +38,7 @@ async def start_pipline():
     api = PotokApi(config=config, logger=log)
     db = DBPostgresRepository(config=config)
 
-    await tg_alerting.send('Starts Potok API pipline')
+    await tg_alerting.send('Starts Potok API pipeline')
     try:
         await db.int_db()
         await api.run()
