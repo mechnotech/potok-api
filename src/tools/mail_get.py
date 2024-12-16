@@ -1,7 +1,7 @@
 import imaplib
 import email
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.header import decode_header
 
 
@@ -46,6 +46,8 @@ class EmailAgent:
         self.logger.debug('Truncated messages OK')
 
     def get_latest_email_code(self):
+        if self.latest_code_time is not None and self.latest_code_time > datetime.now() + timedelta(days=1):
+            self.get_context()
         self.mail.check()
 
         status, data = self.mail.uid('search', None, self.filter_from)
