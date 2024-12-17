@@ -46,9 +46,11 @@ class EmailAgent:
         self.logger.debug('Truncated messages OK')
 
     def get_latest_email_code(self):
-        if self.latest_code_time is not None and self.latest_code_time > datetime.now() + timedelta(days=1):
+        try:
+            self.mail.check()
+        except imaplib.IMAP4.error:
             self.get_context()
-        self.mail.check()
+            self.mail.check()
 
         status, data = self.mail.uid('search', None, self.filter_from)
         if status == 'OK' and data[0]:
