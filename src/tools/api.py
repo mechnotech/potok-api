@@ -144,11 +144,13 @@ class PotokApi:
 
     async def request_otp(self):
         async with aiohttp.ClientSession() as session:
-            next_stage_info = await self.post_request(f'{self.config.api_url}/users/login', self.payload, session)
-            self.set_token(next_stage_info)
-            if self.token:
-                return self.token
-            self.logger.warning('Token not found, try to get OTP!')
+            try:
+                next_stage_info = await self.post_request(f'{self.config.api_url}/users/login', self.payload, session)
+                self.set_token(next_stage_info)
+                if self.token:
+                    return self.token
+            except Exception as e:
+                self.logger.warning(f'Token not found, try to get OTP! Status {e}')
 
     async def try_get_token(self):
         self.try_get_opt()
