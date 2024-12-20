@@ -24,9 +24,15 @@ services:
     networks:
       - db-net
     entrypoint: ['python', 'src/stage.py']
+    volumes:
+      - api_tokens:/code/src/tools/auth
 
 
 networks:
   db-net:
     name: db-net
     external: true
+
+volumes:
+  api_tokens:
+    name: api_tokens
