@@ -89,10 +89,13 @@ class PotokApi:
 
         url = f'https://i.potok.digital/api/projects/rising-funds?companyId={user_company_id}'
 
-        async with aiohttp.ClientSession(headers=self.get_headers()) as session:
-            result = await self.get_request(url=url, session=session)
-        if result:
-            return result
+        try:
+            async with aiohttp.ClientSession(headers=self.get_headers()) as session:
+                result = await self.get_request(url=url, session=session)
+            if result:
+                return result
+        except Exception as e:
+            self.logger.error(e)
 
     def try_get_opt(self, limit: int = 4):
         if self.otp:
