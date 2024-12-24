@@ -97,7 +97,7 @@ class PotokApi:
         except Exception as e:
             self.logger.error(e)
 
-    def try_get_opt(self, limit: int = 4):
+    def try_get_opt(self, limit: int = 6):
         if self.otp:
             return
         for i in range(limit):
@@ -133,7 +133,7 @@ class PotokApi:
     def set_token(self, token_container):
         self.token = token_container.get('token')
         self.refresh_token = token_container.get('refreshToken')
-        self.token_ttl = datetime.utcnow() + timedelta(hours=24)
+        self.token_ttl = datetime.utcnow() + timedelta(hours=self.config.api_token_ttl)
 
     async def get_token_with_otp(self):
         async with aiohttp.ClientSession() as session:
@@ -148,6 +148,8 @@ class PotokApi:
     async def request_otp(self):
         async with aiohttp.ClientSession() as session:
             try:
+                old_otp = self.payload.pop('otp', False)
+                self.logger.debug(f'Old OTP extracted: {old_otp}' if old_otp else 'Try new OTP')
                 next_stage_info = await self.post_request(f'{self.config.api_url}/users/login', self.payload, session)
                 self.set_token(next_stage_info)
                 if self.token:
