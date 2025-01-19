@@ -51,7 +51,7 @@ async def start_pipline():
                     await asyncio.sleep(160)
                     log.warning('Try reconnect and receive new tokens. Wait a minute ...')
                     await api.try_get_token()
-                    continue
+                continue
 
             for candidate in loans_candidates:
                 loans_ids.add(candidate['id'])
