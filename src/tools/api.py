@@ -1,9 +1,11 @@
+import asyncio
 import json
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import aiohttp
+import backoff
 from pydantic import BaseModel
 
 from src.tools.mail_get import EmailAgent
@@ -56,6 +58,8 @@ class PotokApi:
             json.dump(tokens, f)
         self.logger.debug('Cached tokens set!')
 
+    @backoff.on_exception(backoff.expo,
+                          (asyncio.TimeoutError,))
     async def check_balance(self, user_company_id: str = None):
         """
         Вернуть баланс пользователя
