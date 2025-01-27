@@ -6,6 +6,7 @@ from pathlib import Path
 
 import aiohttp
 import backoff
+from aiohttp import ClientConnectorError
 from pydantic import BaseModel
 
 from src.tools.mail_get import EmailAgent
@@ -59,7 +60,7 @@ class PotokApi:
         self.logger.debug('Cached tokens set!')
 
     @backoff.on_exception(backoff.expo,
-                          (asyncio.TimeoutError,))
+                          (asyncio.TimeoutError, ClientConnectorError))
     async def check_balance(self, user_company_id: str = None):
         """
         Вернуть баланс пользователя
